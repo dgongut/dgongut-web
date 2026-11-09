@@ -453,6 +453,121 @@ function restart() {
   boot();
 }
 
+// ---------- Más easter eggs (comandos ocultos) ----------
+const tr = (es, en) => lang === "es" ? es : en;
+const T0 = Date.now();
+const muted = s => out(`<span class="muted">${esc(s)}</span>`);
+
+const FORTUNES = [
+  ["Funciona en mi máquina. Por eso metí la máquina en un contenedor.", "It works on my machine. So I shipped the machine in a container."],
+  ["Hay 10 tipos de personas: las que entienden binario y las que no.", "There are 10 kinds of people: those who understand binary and those who don't."],
+  ["Un backup que nunca has restaurado es solo una esperanza comprimida.", "A backup you've never restored is just compressed hope."],
+  ["No es DNS. No puede ser DNS. Era DNS.", "It's not DNS. There's no way it's DNS. It was DNS."],
+  ["Los bots no duermen. Yo tampoco cuando uno falla a las 3 de la mañana.", "Bots never sleep. Neither do I when one breaks at 3 a.m."],
+  ["git commit -m \"arreglo final\" · git commit -m \"ahora sí\" · git commit -m \"por favor\"", "git commit -m \"final fix\" · git commit -m \"really final\" · git commit -m \"please\""],
+  ["Las dos cosas más difíciles en informática: invalidar cachés, poner nombres y los errores por uno.", "The two hardest things in computing: cache invalidation, naming things and off-by-one errors."],
+  ["Si funciona, no lo toques. Si no funciona, reinicia el contenedor.", "If it works, don't touch it. If it doesn't, restart the container."],
+  ["El homelab nunca está terminado. Solo está en la versión de hoy.", "A homelab is never finished. It's just at today's version."],
+];
+
+function cowsay(text) {
+  const t = (text || tr("¡Instala docker-controller-bot!", "Install docker-controller-bot!")).slice(0, 48);
+  out(esc(` ${"_".repeat(t.length + 2)}\n< ${t} >\n ${"-".repeat(t.length + 2)}
+        \\   ^__^
+         \\  (oo)\\_______
+            (__)\\       )\\/\\
+                ||----w |
+                ||     ||`));
+}
+
+async function sl() {
+  const art = ["      o  O  o", "     ____    ║", " ___|_[]_|___║___", "|    DGONGUT     |>", "'-(O)--(O)--(O)--'"];
+  const w = Math.max(...art.map(l => l.length)), pad = art.map(l => l.padEnd(w));
+  const el = document.createElement("div"); el.className = "line out"; term.appendChild(el);
+  const probe = document.createElement("span"); probe.textContent = "M".repeat(20); el.appendChild(probe);
+  const cols = Math.max(20, Math.floor(term.clientWidth / (probe.getBoundingClientRect().width / 20 || 8)) - 1);
+  for (let x = cols, f = 0; x > -w; x -= 2, f++) {
+    const lines = pad.map((l, i) => {
+      if (i === 0) l = (f >> 1) % 2 ? "      O  o  O".padEnd(w) : l;
+      return (x >= 0 ? " ".repeat(x) + l : l.slice(-x)).slice(0, cols);
+    });
+    el.textContent = lines.join("\n");
+    if (f % 3 === 0) Sound.click(true);
+    scroll();
+    await sleep(28);
+    if (reduce) break;
+  }
+  el.remove();
+  muted(tr("🚂 chu chu… (querías escribir 'ls')", "🚂 choo choo… (you meant 'ls')"));
+}
+
+async function ping(host) {
+  const h = host || "dgongut.com";
+  if (!/^[a-z0-9.-]{1,60}$/.test(h)) return muted(`ping: ${h}: ${tr("Nombre o servicio desconocido", "Name or service not known")}`);
+  const local = /^(localhost|127\.0\.0\.1)$/.test(h);
+  out(`PING ${esc(h)}: 56 data bytes`);
+  const times = [];
+  for (let i = 0; i < 4; i++) {
+    await sleep(i ? 700 : 300);
+    const t = local ? 0.04 + Math.random() * 0.03 : 9 + Math.random() * 14;
+    times.push(t);
+    out(`64 bytes from ${esc(h)}: icmp_seq=${i} ttl=${local ? 64 : 57} time=${t.toFixed(local ? 3 : 1)} ms`);
+  }
+  muted(`--- ${h} ping statistics ---\n4 packets transmitted, 4 received, 0% packet loss\nrtt min/avg/max = ${[Math.min(...times), times.reduce((a, b) => a + b) / 4, Math.max(...times)].map(v => v.toFixed(local ? 3 : 1)).join("/")} ms`);
+}
+
+function degauss() {
+  Sound.thump();
+  document.body.classList.remove("degauss"); void document.body.offsetWidth;
+  document.body.classList.add("degauss");
+  setTimeout(() => document.body.classList.remove("degauss"), 1200);
+}
+
+// Código Konami: ↑ ↑ ↓ ↓ ← → ← → B A
+const KONAMI = "arrowup arrowup arrowdown arrowdown arrowleft arrowright arrowleft arrowright b a";
+let keyBuf = [];
+addEventListener("keydown", e => {
+  keyBuf = [...keyBuf, (e.key || "").toLowerCase()].slice(-10);
+  if (keyBuf.join(" ") !== KONAMI || !booted || busy) return;
+  keyBuf = [];
+  setTimeout(() => {
+    input.value = "";
+    out(`<span class="hl">🎮 ↑ ↑ ↓ ↓ ← → ← → B A</span>`);
+    muted(tr("+30 vidas. Monitor desmagnetizado.", "+30 lives. Monitor degaussed."));
+    degauss();
+  });
+});
+
+function gitCmd(sub, arg) {
+  if (sub === "status") return muted(tr(
+    "En la rama main\nTu rama está actualizada con 'origin/main'.\n\nnada para hacer commit, el árbol de trabajo está limpio",
+    "On branch main\nYour branch is up to date with 'origin/main'.\n\nnothing to commit, working tree clean"));
+  if (sub === "push" && /(^|\s)(-f|--force)(\s|$)/.test(arg)) {
+    const fri = new Date().getDay() === 5;
+    return out(`<span class="warn">${esc(tr(fri ? "¿push --force un viernes? Ni de broma. 🙅" : "push --force… espero que sepas lo que haces. 😬",
+      fri ? "push --force on a Friday? No way. 🙅" : "push --force… hope you know what you're doing. 😬"))}</span>`);
+  }
+  if (sub === "push") return muted("Everything up-to-date");
+  if (sub === "pull") return muted(tr("Ya está actualizado.", "Already up to date."));
+  if (sub === "blame") return muted(tr("La culpa es de dgongut. Siempre.", "It was dgongut. It's always dgongut."));
+  muted(tr(`git: '${sub || ""}' no es un comando de git. Prueba 'git log'.`, `git: '${sub || ""}' is not a git command. Try 'git log'.`));
+}
+
+function cd(arg) {
+  const a = arg.replace(/\/$/, "");
+  if (!a || a === "~" || a === "/home/dgongut" || a === ".") return;
+  if (a === "..") return muted(tr("Más arriba no hay nada interesante. 😄", "Nothing interesting up there. 😄"));
+  if (/^\/?projects$/.test(a)) return COMMANDS["ls /projects"]();
+  if (/^\/?social$/.test(a)) return COMMANDS["ls /social"]();
+  out(`<span class="warn">${esc(T[lang].notFound(a))}</span>`);
+}
+
+const EDITORS = {
+  vim: ["Has entrado en vim. Llevas 0 segundos intentando salir… Pista: escribe :q", "You're in vim now. 0 seconds trying to get out so far… Hint: type :q"],
+  emacs: ["emacs: un gran sistema operativo, solo le falta un buen editor. 😏", "emacs: a great operating system, lacking only a decent editor. 😏"],
+  nano: ["nano: la opción sensata. Pero aquí no hay nada que editar. 😄", "nano: the sensible choice. But there's nothing to edit here. 😄"],
+};
+
 // ---------- Comandos ----------
 const COMMANDS = {
   whoami: () => T[lang].intro.forEach(l => out(esc(l))),
@@ -513,8 +628,56 @@ const COMMANDS = {
   matrix,
   exit: shutdown,
   logout: shutdown,
+  // ocultos
+  "uname -a": () => out("Linux trappist 6.12.0-dgongut #1 SMP PREEMPT_DYNAMIC Debian 6.12 x86_64 GNU/Linux"),
+  uptime: () => {
+    const s = Math.floor((Date.now() - T0) / 1000), mm = String(Math.floor(s / 60)).padStart(2, "0"), ss = String(s % 60).padStart(2, "0");
+    out(`${now()} up ${mm}:${ss}, 1 user, load average: ☕ ☕ ☕`);
+    muted(tr(`(y programando: +${YEARS} años)`, `(and coding: ${YEARS}+ years)`));
+  },
+  history: () => cmdHistory.forEach((c, i) => out(`<span class="muted">${String(i + 1).padStart(4)}</span>  ${esc(c)}`)),
+  fortune: () => { const f = FORTUNES[Math.random() * FORTUNES.length | 0]; out(`<span class="hl">${esc(f[lang === "es" ? 0 : 1])}</span>`); },
+  sl,
+  "docker ps": () => {
+    out(`<span class="muted">${"IMAGE".padEnd(38)}STATUS</span>`);
+    PROJECTS.filter(([n]) => n !== "borgmatic-script").forEach(([n], i) =>
+      out(`${esc(("dgongut/" + n).padEnd(38))}<span class="hl">Up ${[3, 2, 5, 7, 4, 2, 6][i % 7]} ${tr("semanas", "weeks")} (healthy)</span>`));
+  },
+  htop: () => {
+    out(`<span class="muted">  PID USER      CPU%  MEM%  COMMAND</span>`);
+    [[1, "dgongut", 87.0, 12.3, tr("café", "coffee")], [42, "root", 4.2, 1.1, "docker-controller-bot"],
+     [128, "root", 2.7, 0.9, "malaga-cam-bot"], [256, "root", 1.9, 0.8, "torrent-controller-bot"],
+     [512, "root", 0.4, 0.3, "borgmatic --stats"], [1337, "dgongut", 0.1, 0.0, tr("procrastinar --quiet", "procrastinate --quiet")]]
+      .forEach(([p, u, c, m, n]) => out(`${String(p).padStart(5)} ${u.padEnd(9)} ${c.toFixed(1).padStart(5)} ${m.toFixed(1).padStart(5)}  <span class="hl">${esc(n)}</span>`));
+  },
+  who: () => {
+    out(`dgongut  pts/0  ${new Date(T0).toLocaleTimeString("es-ES", { hour12: false })}`);
+    out(`${tr("tú", "you").padEnd(8)} pts/1  ${tr("ahora mismo 👀", "right now 👀")}`);
+  },
+  "ls -la": () => [["drwxr-xr-x", "dgongut", "."], ["drwxr-xr-x", "root   ", ".."], ["-rw-------", "dgongut", ".secretos"],
+    ["drwxr-xr-x", "dgongut", "Projects/"], ["drwxr-xr-x", "dgongut", "Social/"], ["-rw-r--r--", "dgongut", "skills.txt"]]
+    .forEach(([p, u, n]) => out(`<span class="muted">${p}  ${u}</span>  ${n.startsWith(".") ? esc(n) : `<span class="hl">${esc(n)}</span>`}`)),
+  "cat .secretos": () => {
+    muted(tr("Pistas, no soluciones:", "Hints, not answers:"));
+    tr(["· hay un tren que pasa si te equivocas al escribir 'ls'", "· una vaca que habla", "· galletas de la fortuna", "· un editor del que nadie sabe salir", "· un código de los 80: ↑ ↑ ↓ ↓ ← → ← → B A", "· y un comando que nunca deberías ejecutar como root"],
+      ["· a train that passes when you mistype 'ls'", "· a talking cow", "· fortune cookies", "· an editor nobody knows how to quit", "· an 80s code: ↑ ↑ ↓ ↓ ← → ← → B A", "· and a command you should never run as root"]).forEach(l => out(esc(l)));
+  },
+  ":q": () => muted(tr("Has salido de vim. Eres de los pocos. 🏆", "You quit vim. One of the few. 🏆")),
+  coffee: () => {
+    out(`<span class="warn">HTTP 418 I'm a teapot</span>`);
+    out(`${esc(tr("Esta terminal no hace café, pero puedes invitarme a uno:", "This terminal can't brew coffee, but you can buy me one:"))} ${runBtn("donate")}`);
+  },
+  hola: () => out(esc(tr("¡Hola! 👋 Escribe 'help' para ver qué puedes hacer… o busca los secretos. 😉", "Hi! 👋 Type 'help' to see what you can do… or hunt for the secrets. 😉"))),
+  "42": () => out(esc(tr("La respuesta a la vida, el universo y todo lo demás. Ahora falta la pregunta.", "The answer to life, the universe and everything. Now we need the question."))),
+  reboot: () => { restart(); return true; },
+  degauss,
+  "make me a sandwich": () => muted(tr("¿Qué? Háztelo tú.", "What? Make it yourself.")),
+  "sudo make me a sandwich": () => muted(tr("Vale.", "Okay.")),
 };
-const ALIASES = { "cat donors.txt": "donors", "ls /donors": "donors", thanks: "donors", gracias: "donors", "ls /projects/": "ls /projects", "ls /social/": "ls /social", projects: "ls /projects", social: "ls /social", skills: "cat skills.txt" };
+const ALIASES = { "cat donors.txt": "donors", "ls /donors": "donors", thanks: "donors", gracias: "donors", "ls /projects/": "ls /projects", "ls /social/": "ls /social", projects: "ls /projects", social: "ls /social", skills: "cat skills.txt",
+  uname: "uname -a", top: "htop", "ls -a": "ls -la", "ls -al": "ls -la", ll: "ls -la", "cat .secrets": "cat .secretos",
+  ":q!": ":q", ":wq": ":q", ":x": ":q", ":qa!": ":q", "café": "coffee", cafe: "coffee", "make coffee": "coffee", "brew coffee": "coffee",
+  hello: "hola", hi: "hola", hey: "hola", "buenas": "hola", shutdown: "exit", poweroff: "exit", "sudo reboot": "reboot", "sudo shutdown": "exit" };
 const COMPLETIONS = [...new Set([...T.es.help.map(([c]) => c).filter(c => !c.includes("<")), "lang es", "matrix", "exit",
   "theme green", "theme default", "sound off", "cat donors.txt", ...PROJECTS.map(([n]) => "cat " + n)])];
 const isRmRf = c => /^(sudo\s+)?rm\s+-(rf|fr)\s+(\/|\/\*|~)\s*$/.test(c);
@@ -558,9 +721,27 @@ async function run(raw, animated = false) {
     if (!cmd) return;
     const key = cmd.toLowerCase().replace(/\s+/g, " ");
     if (isRmRf(key)) { keepBusy = true; await rmrf(); return; }
+    const fn = COMMANDS[ALIASES[key] || key];
+    if (fn) {
+      const r = fn();
+      if (r instanceof Promise) await r; else keepBusy = r === true;
+      return;
+    }
     if (key.startsWith("sudo ")) { out(`<span class="muted">${lang === "es" ? "buen intento 😏" : "nice try 😏"}</span>`); return; }
     const [verb, ...rest] = key.split(" "), arg = rest.join(" ");
-    if (verb === "cat" && arg && arg !== "skills.txt" && arg !== "donors.txt") { catProject(arg); return; }
+    const rawArg = cmd.replace(/^\S+\s*/, "");   // argumento con mayúsculas originales
+    if (verb === "cat" && arg) { catProject(arg); return; }
+    if (verb === "echo") { out(esc(rawArg.slice(0, 200))); return; }
+    if (verb === "cowsay") { cowsay(rawArg); return; }
+    if (verb === "ping") { await ping(rest[0]); return; }
+    if (verb === "git") { gitCmd(rest[0], rest.slice(1).join(" ")); return; }
+    if (verb === "cd") { cd(arg); return; }
+    if (verb === "vi" || verb === "vim" || verb === "nvim") { muted(EDITORS.vim[lang === "es" ? 0 : 1]); return; }
+    if (EDITORS[verb]) { muted(EDITORS[verb][lang === "es" ? 0 : 1]); return; }
+    if (verb === "man") { muted(arg ? tr(`No hay entrada de manual para ${arg}. Prueba 'help'.`, `No manual entry for ${arg}. Try 'help'.`) : tr("¿Qué página del manual desea?", "What manual page do you want?")); return; }
+    if (verb === "ssh") { out(`<span class="warn">${esc(`${arg || "trappist"}: Permission denied (publickey).`)}</span> 🔐`); return; }
+    if (["apt", "apt-get", "brew", "pip", "npm"].includes(verb)) { out(`<span class="warn">${esc(tr("E: No se pudo abrir el fichero de bloqueo «/var/lib/dpkg/lock-frontend» - open (13: Permiso denegado). ¿Eres root?", "E: Could not open lock file /var/lib/dpkg/lock-frontend - open (13: Permission denied). Are you root?"))}</span>`); return; }
+    if (verb === "rm") { out(`<span class="warn">${esc(tr(`rm: no se puede borrar '${rest.at(-1) || ""}': Sistema de ficheros de solo lectura`, `rm: cannot remove '${rest.at(-1) || ""}': Read-only file system`))}</span>`); return; }
     if (verb === "theme") {
       if (["amber", "green", "default"].includes(arg)) { applyTheme(arg); out(`<span class="muted">${esc(T[lang].themeOk(arg))}</span>`); }
       else out(`<span class="muted">${T[lang].themeBad}</span>`);
@@ -571,9 +752,7 @@ async function run(raw, animated = false) {
       else out(`<span class="muted">${T[lang].soundBad}</span>`);
       return;
     }
-    const fn = COMMANDS[ALIASES[key] || key];
-    if (fn) keepBusy = fn() === true;
-    else out(`<span class="muted">${esc(T[lang].notfound(cmd))}</span>`);
+    out(`<span class="muted">${esc(T[lang].notfound(cmd))}</span>`);
   } catch (e) {
     if (!(e instanceof Cancelled)) throw e;
   } finally {
