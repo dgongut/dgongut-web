@@ -308,6 +308,48 @@ function projectTag(name, url, fallback) {
   return parts.join(" · ");
 }
 
+// ---------- Estadísticas (stats.dgongut.com/dgongut-web) ----------
+// Cuenta visitas y comandos, sumados por día. No se guarda nada en el navegador y todas las
+// visitas comparten el mismo install_id: el servidor no puede distinguir a un visitante de otro.
+// Solo se envía qué comando era (de una lista cerrada), nunca lo que se ha escrito.
+const Stats = (() => {
+  const URL_PING = "https://telemetry.dgongut.com/v1/ping";
+  const on = !navigator.webdriver && !!navigator.sendBeacon && ["www.dgongut.com", "dgongut.com"].includes(location.hostname);
+  let pending = {};
+  const send = usage => {
+    if (!on || !Object.keys(usage).length) return;
+    // text/plain: así es una petición simple, sin preflight de CORS (el servidor lee el JSON igual)
+    navigator.sendBeacon(URL_PING, new Blob([JSON.stringify({ schema: 1, project: "dgongut-web",
+      install_id: "6dc79978-aaa6-4678-9d7a-fee2560edf63", version: "1", usage })], { type: "text/plain" }));
+  };
+  const flush = () => { const u = pending; pending = {}; send(u); };
+  addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flush(); });
+  addEventListener("pagehide", flush);
+  return {
+    visit: () => send({ visit: 1, [`lang_${lang}`]: 1 }),
+    count: k => { pending[k] = (pending[k] || 0) + 1; },
+  };
+})();
+// Los comandos de help con nombre propio en el panel; los ocultos se agrupan para no destaparlos
+const STATS_CMDS = { whoami: "whoami", "ls /projects": "ls_projects", "ls /social": "ls_social", "cat skills.txt": "cat_skills",
+  neofetch: "neofetch", "git log": "git_log", "docker images": "docker_images", contact: "contact", donate: "donate",
+  donors: "donors", help: "help", clear: "clear", "lang es": "lang", "lang en": "lang", ls: "ls", pwd: "pwd", date: "date",
+  matrix: "matrix", exit: "exit", logout: "exit" };
+const SECRET_VERBS = ["cal", "echo", "cowsay", "ping", "git", "cd", "vi", "vim", "nvim", "man", "ssh", "apt", "apt-get", "brew", "pip", "npm", "rm"];
+function statsKey(key) {
+  const k = ALIASES[key] || key;
+  if (STATS_CMDS[k]) return "cmd_" + STATS_CMDS[k];
+  if (COMMANDS[k] || isRmRf(key) || key.startsWith("sudo ")) return "cmd_secret";
+  const [verb, ...rest] = k.split(" "), arg = rest.join(" ");
+  if (verb === "cat" && arg) {
+    const n = arg.replace(/^\/?projects\//, "").replace(/\/$/, "");
+    return ABOUT[n] && PROJECTS.some(([p]) => p === n) ? "cat_" + n.replace(/[^a-z0-9]/g, "_") : "cmd_unknown";
+  }
+  if (verb === "theme" || verb === "sound") return "cmd_" + verb;
+  if (SECRET_VERBS.includes(verb) || EDITORS[verb]) return "cmd_secret";
+  return "cmd_unknown";
+}
+
 // ---------- Sonido (Web Audio, sin archivos; apagado por defecto) ----------
 const Sound = {
   ctx: null, on: false, hum: null, noise: null,
@@ -564,6 +606,7 @@ addEventListener("keydown", e => {
   keyBuf = [...keyBuf, (e.key || "").toLowerCase()].slice(-10);
   if (keyBuf.join(" ") !== KONAMI || !booted || busy) return;
   keyBuf = [];
+  Stats.count("cmd_secret");
   setTimeout(() => {
     input.value = "";
     out(`<span class="hl">🎮 ↑ ↑ ↓ ↓ ← → ← → B A</span>`);
@@ -754,6 +797,7 @@ async function run(raw, animated = false) {
     if (animated) await type(cmd, 20); else promptLine().textContent = cmd;
     if (!cmd) return;
     const key = cmd.toLowerCase().replace(/\s+/g, " ");
+    if (booted) Stats.count(statsKey(key));   // los de la animación de arranque no cuentan
     if (isRmRf(key)) { keepBusy = true; await rmrf(); return; }
     const fn = COMMANDS[ALIASES[key] || key];
     if (fn) {
@@ -872,4 +916,5 @@ async function boot() {
   scroll();
 }
 setInterval(() => { inputTs.textContent = now(); }, 1000);
+Stats.visit();
 boot();

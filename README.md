@@ -42,6 +42,17 @@ Lo demás se actualiza solo:
 - **Donantes:** del `donors.json` de los bots, a través de `/api/donors.json`.
 - **Años de experiencia:** se calculan desde 2019.
 
+## Estadísticas
+
+Las visitas y los comandos se ven en [stats.dgongut.com/dgongut-web](https://stats.dgongut.com/dgongut-web), con el servicio de [telemetry](https://github.com/dgongut/telemetry) que usan los bots. El código está en `Stats` y `statsKey()` de `www/app.js`:
+- Cada carga de la página cuenta una visita, con su idioma.
+- Cada comando que escribe o pulsa el visitante suma uno (los de la animación de arranque no cuentan). Solo se envía qué comando era: los de `help` van con su nombre, `cat <proyecto>` por proyecto, los ocultos juntos como `cmd_secret` y lo que no existe como `cmd_unknown`.
+- Los comandos se mandan al esconder o cerrar la pestaña, con `sendBeacon`.
+- No se guarda nada en el navegador y todas las visitas usan el mismo `install_id`, así que no hace falta banner de cookies.
+- Solo se envía desde www.dgongut.com: en local no sale nada.
+
+Si añades un comando a `help`, añádelo también a `STATS_CMDS`, y su etiqueta a `projects/dgongut-web.yaml` en telemetry. Si no, cuenta como secreto. Un proyecto nuevo solo necesita su etiqueta `cat_` en ese manifiesto.
+
 ## Probar en local
 
 ```bash
