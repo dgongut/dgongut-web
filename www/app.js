@@ -516,6 +516,35 @@ async function ping(host) {
   muted(`--- ${h} ping statistics ---\n4 packets transmitted, 4 received, 0% packet loss\nrtt min/avg/max = ${[Math.min(...times), times.reduce((a, b) => a + b) / 4, Math.max(...times)].map(v => v.toFixed(local ? 3 : 1)).join("/")} ms`);
 }
 
+// cal [mes] [año]: como el de Unix, con hoy resaltado en vídeo inverso
+function cal(arg) {
+  const today = new Date(), a = arg.split(" ").filter(Boolean).map(Number);
+  let m = today.getMonth(), y = today.getFullYear();
+  if (a.length === 1 && a[0] >= 1 && a[0] <= 12) m = a[0] - 1;
+  else if (a.length === 1 && a[0] >= 1 && a[0] <= 9999) y = a[0];
+  else if (a.length === 2 && a[0] >= 1 && a[0] <= 12 && a[1] >= 1 && a[1] <= 9999) { m = a[0] - 1; y = a[1]; }
+  else if (a.length) return muted(tr("uso: cal [mes] [año]", "usage: cal [month] [year]"));
+  const loc = lang === "es" ? "es-ES" : "en-US", monFirst = lang === "es";
+  const first = new Date(y, m, 1); first.setFullYear(y);
+  const title = first.toLocaleDateString(loc, { month: "long", year: "numeric" }).replace(" de ", " ");
+  const days = [...Array(7)].map((_, i) => new Date(2024, 0, (monFirst ? 1 : 7) + i)
+    .toLocaleDateString(loc, { weekday: "short" }).replace(".", "").slice(0, 2));
+  // septiembre de 1752: el salto al calendario gregoriano (del 2 se pasó al 14), como en el cal de Unix
+  const gap = y === 1752 && m === 8;
+  const list = gap ? [1, 2, ...Array.from({ length: 17 }, (_, i) => i + 14)]
+    : Array.from({ length: new Date(y, m + 1, 0).getDate() }, (_, i) => i + 1);
+  const off = ((gap ? 2 : first.getDay()) + (monFirst ? 6 : 0)) % 7;
+  const isNow = y === today.getFullYear() && m === today.getMonth();
+  let rows = [], row = Array(off).fill("  ");
+  for (const d of list) {
+    const s = String(d).padStart(2);
+    row.push(isNow && d === today.getDate() ? `<span class="rev">${s}</span>` : s);
+    if (row.length === 7) { rows.push(row.join(" ")); row = []; }
+  }
+  if (row.length) rows.push(row.join(" "));
+  out(`<span class="hl">${esc(title.padStart(10 + Math.ceil(title.length / 2)))}</span>\n<span class="muted">${esc(days.join(" "))}</span>\n${rows.join("\n")}`);
+}
+
 function degauss() {
   Sound.thump();
   document.body.classList.remove("degauss"); void document.body.offsetWidth;
@@ -731,6 +760,7 @@ async function run(raw, animated = false) {
     const [verb, ...rest] = key.split(" "), arg = rest.join(" ");
     const rawArg = cmd.replace(/^\S+\s*/, "");   // argumento con mayúsculas originales
     if (verb === "cat" && arg) { catProject(arg); return; }
+    if (verb === "cal") { cal(arg); return; }
     if (verb === "echo") { out(esc(rawArg.slice(0, 200))); return; }
     if (verb === "cowsay") { cowsay(rawArg); return; }
     if (verb === "ping") { await ping(rest[0]); return; }
