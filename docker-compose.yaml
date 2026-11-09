@@ -1,0 +1,25 @@
+services:
+  dgongut-web:
+    container_name: dgongut-web
+    image: lscr.io/linuxserver/nginx:latest
+    environment:
+      - PUID=1026
+      - PGID=100
+      - TZ=Europe/Madrid
+    volumes:
+      - /home/dgongut/docker/dgongut-web/config:/config
+    ports:
+      - 8083:80
+    restart: unless-stopped
+  dgongut-donate-web:
+    container_name: dgongut-donate-web
+    image: lscr.io/linuxserver/nginx:latest
+    environment:
+      - PUID=1026
+      - PGID=100
+      - TZ=Europe/Madrid
+    volumes:
+      - /home/dgongut/docker/dgongut-donate-web/config:/config
+    ports:
+      - 8085:80
+    restart: unless-stopped
