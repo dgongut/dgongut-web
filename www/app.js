@@ -209,8 +209,10 @@ const T = {
 const CHIPS = ["help", "ls /Projects", "git log", "cat skills.txt", "contact", "theme amber", "donate"];
 
 // ---------- Motor de terminal ----------
-let lang = (new URLSearchParams(location.search).get("lang")
-  || (navigator.language || "es").slice(0,2)) === "en" ? "en" : "es";
+// ?lang= manda; si no, español para navegadores en español (y catalán, gallego y euskera) e inglés para el resto
+const LANG_Q = new URLSearchParams(location.search).get("lang");
+let lang = LANG_Q === "es" || LANG_Q === "en" ? LANG_Q
+  : ["es", "ca", "gl", "eu"].includes((navigator.language || "").slice(0, 2).toLowerCase()) ? "es" : "en";
 const term = document.getElementById("term");
 const input = document.getElementById("input");
 const inputLine = document.getElementById("input-line");
@@ -333,7 +335,7 @@ const Stats = (() => {
 // Los comandos de help con nombre propio en el panel; los ocultos se agrupan para no destaparlos
 const STATS_CMDS = { whoami: "whoami", "ls /projects": "ls_projects", "ls /social": "ls_social", "cat skills.txt": "cat_skills",
   neofetch: "neofetch", "git log": "git_log", "docker images": "docker_images", contact: "contact", donate: "donate",
-  donors: "donors", help: "help", clear: "clear", "lang es": "lang", "lang en": "lang", ls: "ls", pwd: "pwd", date: "date",
+  donors: "donors", help: "help", clear: "clear", "lang es": "lang_es", "lang en": "lang_en", ls: "ls", pwd: "pwd", date: "date",
   matrix: "matrix", exit: "exit", logout: "exit" };
 const SECRET_VERBS = ["cal", "echo", "cowsay", "ping", "git", "cd", "vi", "vim", "nvim", "man", "ssh", "apt", "apt-get", "brew", "pip", "npm", "rm"];
 function statsKey(key) {
