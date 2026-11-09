@@ -101,7 +101,7 @@ const T = {
     intro: [
       "Hola, soy Daniel G.",
       "Ingeniero en Sistemas de Telecomunicación, dedicado al desarrollo de software.",
-      "Hago bots de Telegram, automatizo cosas y tengo más NAS de los que debería.",
+      p => `Hago bots de Telegram${p ? ` (${p} descargas en Docker Hub)` : ""}, automatizo cosas y tengo más NAS de los que debería.`,
     ],
     skills: [
       `Desarrollo de software · +${YEARS} años · Java, Python, Bash, SQL, Docker, Git`,
@@ -120,7 +120,7 @@ const T = {
       ["cat <proyecto>", "detalles de un proyecto"],
       ["git log", "últimas releases"],
       ["docker images", "pulls en Docker Hub"],
-      ["theme amber", "fósforo ámbar (green, default)"],
+      ["theme amber", "fósforo ámbar (green, plain, default)"],
       ["sound on", "sonido de CRT y teclado (off)"],
       ["donate", "invítame a un café"],
       ["donors", "gracias a quienes me apoyan ❤"],
@@ -142,7 +142,7 @@ const T = {
     noFile: f => `cat: ${f}: No existe el archivo. Prueba con un nombre de 'ls /Projects'.`,
     projTip: "toca un proyecto para ver qué hace",
     themeOk: t => `tema: ${t}`,
-    themeBad: "uso: theme amber | green | default",
+    themeBad: "uso: theme amber | green | plain | default",
     soundOn: "sonido activado 🔊 (sube el volumen)", soundOff: "sonido desactivado 🔇",
     soundBad: "uso: sound on | off",
     matrixExit: "(pulsa cualquier tecla o toca para salir)",
@@ -155,7 +155,7 @@ const T = {
     intro: [
       "Hi, I'm Daniel G.",
       "Telecommunication Systems Engineer, working in software development.",
-      "I build Telegram bots, automate things and own more NAS boxes than I should.",
+      p => `I build Telegram bots${p ? ` (${p} Docker Hub pulls)` : ""}, automate things and own more NAS boxes than I should.`,
     ],
     skills: [
       `Software development · ${YEARS}+ years · Java, Python, Bash, SQL, Docker, Git`,
@@ -174,7 +174,7 @@ const T = {
       ["cat <project>", "project details"],
       ["git log", "latest releases"],
       ["docker images", "Docker Hub pulls"],
-      ["theme amber", "amber phosphor (green, default)"],
+      ["theme amber", "amber phosphor (green, plain, default)"],
       ["sound on", "CRT and keyboard sound (off)"],
       ["donate", "buy me a coffee"],
       ["donors", "thanks to my supporters ❤"],
@@ -196,7 +196,7 @@ const T = {
     noFile: f => `cat: ${f}: No such file. Try a name from 'ls /Projects'.`,
     projTip: "tap a project to see what it does",
     themeOk: t => `theme: ${t}`,
-    themeBad: "usage: theme amber | green | default",
+    themeBad: "usage: theme amber | green | plain | default",
     soundOn: "sound on 🔊 (turn the volume up)", soundOff: "sound off 🔇",
     soundBad: "usage: sound on | off",
     matrixExit: "(press any key or tap to exit)",
@@ -288,6 +288,11 @@ const donorsReady = fetch("/api/donors.json")
   .catch(() => [])
   .then(d => (DONORS = d));
 let PULLS = {}, GH = {};
+pullsReady.then(p => { if (!Object.keys(PULLS).length) PULLS = p; });
+// Intro: la línea de los bots lleva el total de pulls en directo (+3M…) si Docker Hub ya respondió
+const totalPulls = () => { const t = Object.values(PULLS).reduce((a, b) => a + b, 0);
+  return t >= 1e6 ? `+${Math.floor(t / 1e6)}M` : t >= 1e3 ? `+${fmtNum(t)}` : ""; };
+const introLines = () => T[lang].intro.map(l => typeof l === "function" ? l(totalPulls()) : l);
 const loadLive = () => Promise.all([
   pullsReady.then(p => { PULLS = p; }),
   ghReady.then(g => { GH = g; }),
@@ -374,7 +379,7 @@ function applyTheme(t, save = true) {
   if (t === "default") delete document.body.dataset.theme; else document.body.dataset.theme = t;
   if (save) try { localStorage.setItem("theme", t); } catch {}
 }
-try { const t = localStorage.getItem("theme"); if (t === "amber" || t === "green") applyTheme(t, false); } catch {}
+try { const t = localStorage.getItem("theme"); if (t === "amber" || t === "green" || t === "plain") applyTheme(t, false); } catch {}
 
 const ago = iso => {
   const s = (new Date(iso) - Date.now()) / 1000, rtf = new Intl.RelativeTimeFormat(lang, { numeric: "auto" });
@@ -599,7 +604,7 @@ const EDITORS = {
 
 // ---------- Comandos ----------
 const COMMANDS = {
-  whoami: () => T[lang].intro.forEach(l => out(esc(l))),
+  whoami: () => introLines().forEach(l => out(esc(l))),
   "ls /projects": () => {
     PROJECTS.forEach(([n, u, t]) => {
       const tag = projectTag(n, u, t);
@@ -708,7 +713,7 @@ const ALIASES = { "cat donors.txt": "donors", "ls /donors": "donors", thanks: "d
   ":q!": ":q", ":wq": ":q", ":x": ":q", ":qa!": ":q", "café": "coffee", cafe: "coffee", "make coffee": "coffee", "brew coffee": "coffee",
   hello: "hola", hi: "hola", hey: "hola", "buenas": "hola", shutdown: "exit", poweroff: "exit", "sudo reboot": "reboot", "sudo shutdown": "exit" };
 const COMPLETIONS = [...new Set([...T.es.help.map(([c]) => c).filter(c => !c.includes("<")), "lang es", "matrix", "exit",
-  "theme green", "theme default", "sound off", "cat donors.txt", ...PROJECTS.map(([n]) => "cat " + n)])];
+  "theme green", "theme plain", "theme default", "sound off", "cat donors.txt", ...PROJECTS.map(([n]) => "cat " + n)])];
 const isRmRf = c => /^(sudo\s+)?rm\s+-(rf|fr)\s+(\/|\/\*|~)\s*$/.test(c);
 
 function catProject(name) {
@@ -773,7 +778,7 @@ async function run(raw, animated = false) {
     if (["apt", "apt-get", "brew", "pip", "npm"].includes(verb)) { out(`<span class="warn">${esc(tr("E: No se pudo abrir el fichero de bloqueo «/var/lib/dpkg/lock-frontend» - open (13: Permiso denegado). ¿Eres root?", "E: Could not open lock file /var/lib/dpkg/lock-frontend - open (13: Permission denied). Are you root?"))}</span>`); return; }
     if (verb === "rm") { out(`<span class="warn">${esc(tr(`rm: no se puede borrar '${rest.at(-1) || ""}': Sistema de ficheros de solo lectura`, `rm: cannot remove '${rest.at(-1) || ""}': Read-only file system`))}</span>`); return; }
     if (verb === "theme") {
-      if (["amber", "green", "default"].includes(arg)) { applyTheme(arg); out(`<span class="muted">${esc(T[lang].themeOk(arg))}</span>`); }
+      if (["amber", "green", "plain", "default"].includes(arg)) { applyTheme(arg); out(`<span class="muted">${esc(T[lang].themeOk(arg))}</span>`); }
       else out(`<span class="muted">${T[lang].themeBad}</span>`);
       return;
     }
@@ -849,7 +854,7 @@ async function boot() {
   setLang(lang);
   if (MISSING_PATH) out(`<span class="warn">${esc(T[lang].notFound(MISSING_PATH))}</span>`, "line");
   try {
-    for (const l of T[lang].intro) { await type(l); await sleep(250); check(g); }
+    for (let i = 0; i < T[lang].intro.length; i++) { await type(introLines()[i]); await sleep(250); check(g); }
     await type(""); await sleep(300); check(g);
     await run("ls /Social", true); await sleep(400); check(g);
     await Promise.race([loadLive(), sleep(3000)]); check(g);
