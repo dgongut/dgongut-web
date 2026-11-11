@@ -22,10 +22,11 @@ if [[ -z "$LASTMOD" || -n "$(git status --porcelain -- www 2>/dev/null)" ]]; the
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 sed "s#<lastmod>[^<]*</lastmod>#<lastmod>$LASTMOD</lastmod>#" www/sitemap.xml > "$TMP/sitemap.xml"
+chmod 644 "$TMP/sitemap.xml"   # mktemp crea la carpeta privada; el rsync de macOS no tiene --chmod
 
 echo "» Subiendo www/ (sitemap con lastmod $LASTMOD)"
 rsync -rlcv --delete $DRY --exclude '.DS_Store' --exclude '/sitemap.xml' www/ "$HOST:$DIR/config/www/"
-rsync -cv --chmod=F644 $DRY "$TMP/sitemap.xml" "$HOST:$DIR/config/www/sitemap.xml"
+rsync -cpv $DRY "$TMP/sitemap.xml" "$HOST:$DIR/config/www/sitemap.xml"
 
 echo "» Subiendo config de nginx"
 rsync -cv $DRY nginx/security-headers.conf "$HOST:$DIR/config/nginx/security-headers.conf.new"
