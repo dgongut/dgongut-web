@@ -110,7 +110,7 @@ const T = {
     intro: [
       "Hola, soy Daniel G.",
       "Ingeniero en Sistemas de Telecomunicación, dedicado al desarrollo de software.",
-      p => `Hago bots de Telegram${p ? ` (${p} descargas en Docker Hub)` : ""}, automatizo cosas y tengo más NAS de los que debería.`,
+      (p, a) => `Hago bots de Telegram${p || a ? ` (${[p && `${p} descargas en Docker Hub`, a && `${a} instalaciones activas`].filter(Boolean).join(", ")})` : ""}, automatizo cosas y tengo más NAS de los que debería.`,
     ],
     skills: [
       `Desarrollo de software · +${YEARS} años · Java, Python, Bash, SQL, Docker, Git`,
@@ -131,6 +131,7 @@ const T = {
       ["cat <proyecto>", "detalles de un proyecto"],
       ["git log", "últimas releases"],
       ["docker images", "pulls en Docker Hub"],
+      ["docker ps", "instalaciones activas"],
       ["theme amber", "fósforo ámbar (green, plain, default)"],
       ["sound on", "sonido de CRT y teclado (off)"],
       ["donate", "invítame a un café"],
@@ -151,6 +152,10 @@ const T = {
     donorsTail: "¿Quieres aparecer aquí? Escribe 'donate'.",
     donorsHint: n => `Ya me han apoyado ${n} personas, escribe`,
     noDonors: "No he podido cargar la lista ahora mismo.",
+    psHead: "ACTIVAS (30 DÍAS)",
+    psNote: "Instalaciones que han dado señales en los últimos 30 días; solo cuentan las que envían telemetría.",
+    catActive: n => `${n} instalaciones activas en los últimos 30 días`,
+    noTelemetry: "No he podido cargar las instalaciones activas ahora mismo.",
     compose: "Se despliega con Docker Compose: copia el ejemplo del README, rellena sus variables (token de Telegram, tu chat ID…) y arráncalo:",
     noFile: f => `cat: ${f}: No existe el archivo. Prueba con un nombre de 'ls /Projects'.`,
     projTip: "toca un proyecto para ver qué hace",
@@ -168,7 +173,7 @@ const T = {
     intro: [
       "Hi, I'm Daniel G.",
       "Telecommunication Systems Engineer, working in software development.",
-      p => `I build Telegram bots${p ? ` (${p} Docker Hub pulls)` : ""}, automate things and own more NAS boxes than I should.`,
+      (p, a) => `I build Telegram bots${p || a ? ` (${[p && `${p} Docker Hub pulls`, a && `${a} active installs`].filter(Boolean).join(", ")})` : ""}, automate things and own more NAS boxes than I should.`,
     ],
     skills: [
       `Software development · ${YEARS}+ years · Java, Python, Bash, SQL, Docker, Git`,
@@ -189,6 +194,7 @@ const T = {
       ["cat <project>", "project details"],
       ["git log", "latest releases"],
       ["docker images", "Docker Hub pulls"],
+      ["docker ps", "active installs"],
       ["theme amber", "amber phosphor (green, plain, default)"],
       ["sound on", "CRT and keyboard sound (off)"],
       ["donate", "buy me a coffee"],
@@ -209,6 +215,10 @@ const T = {
     donorsTail: "Want to be here? Type 'donate'.",
     donorsHint: n => `${n} people have already supported me, type`,
     noDonors: "Couldn't load the list right now.",
+    psHead: "ACTIVE (30 DAYS)",
+    psNote: "Installs seen in the last 30 days; only those that send telemetry count.",
+    catActive: n => `${n} active installs in the last 30 days`,
+    noTelemetry: "Couldn't load the active installs right now.",
     compose: "Deploy it with Docker Compose: copy the example from the README, fill in its variables (Telegram token, your chat ID…) and start it:",
     noFile: f => `cat: ${f}: No such file. Try a name from 'ls /Projects'.`,
     projTip: "tap a project to see what it does",
@@ -323,15 +333,27 @@ const donorsReady = fetch("/api/donors.json")
   .then(d => Array.isArray(d) ? d.filter(x => typeof x === "string" && x.trim()).map(x => x.trim().slice(0, 80)) : [])
   .catch(() => [])
   .then(d => (DONORS = d));
-let PULLS = {}, GH = {};
+// Instalaciones activas a 30 días de los bots con telemetría (vía proxy nginx /api/telemetry.json)
+const STATS_URL = "https://stats.dgongut.com/";
+const activeReady = fetch("/api/telemetry.json")
+  .then(r => r.ok ? r.json() : [])
+  .then(d => Object.fromEntries((Array.isArray(d) ? d : [])
+    .filter(x => !x.single_instance && /^[a-z0-9-]+$/.test(x.id) && Number(x.active_30) > 0).map(x => [x.id, Number(x.active_30)])))
+  .catch(() => ({}));
+let PULLS = {}, GH = {}, ACTIVE = {};
 pullsReady.then(p => { if (!Object.keys(PULLS).length) PULLS = p; });
+activeReady.then(a => { ACTIVE = a; });
+// Son un mínimo (no cuenta quien apaga la telemetría ni las versiones sin ella): se redondea hacia abajo, con "+"
+const fmtActive = n => n >= 100 ? `+${(Math.floor(n / 10) * 10).toLocaleString(lang === "es" ? "es-ES" : "en-GB")}` : String(n);
+const totalActive = () => { const t = Object.values(ACTIVE).reduce((a, b) => a + b, 0); return t ? fmtActive(t) : ""; };
 // Intro: la línea de los bots lleva el total de pulls en directo (+3M…) si Docker Hub ya respondió
 const totalPulls = () => { const t = Object.values(PULLS).reduce((a, b) => a + b, 0);
   return t >= 1e6 ? `+${Math.floor(t / 1e6)}M` : t >= 1e3 ? `+${fmtNum(t)}` : ""; };
-const introLines = () => T[lang].intro.map(l => typeof l === "function" ? l(totalPulls()) : l);
+const introLines = () => T[lang].intro.map(l => typeof l === "function" ? l(totalPulls(), totalActive()) : l);
 const loadLive = () => Promise.all([
   pullsReady.then(p => { PULLS = p; }),
   ghReady.then(g => { GH = g; }),
+  activeReady.then(a => { ACTIVE = a; }),
 ]);
 
 function projectTag(name, url, fallback) {
@@ -368,7 +390,7 @@ const Stats = (() => {
 })();
 // Los comandos de help con nombre propio en el panel; los ocultos se agrupan para no destaparlos
 const STATS_CMDS = { whoami: "whoami", "ls /projects": "ls_projects", "ls /social": "ls_social", "cat skills.txt": "cat_skills",
-  neofetch: "neofetch", "git log": "git_log", "docker images": "docker_images", contact: "contact", cv: "cv", donate: "donate",
+  neofetch: "neofetch", "git log": "git_log", "docker images": "docker_images", "docker ps": "docker_ps", contact: "contact", cv: "cv", donate: "donate",
   donors: "donors", help: "help", clear: "clear", "lang es": "lang_es", "lang en": "lang_en", ls: "ls", pwd: "pwd", date: "date",
   matrix: "matrix", exit: "exit", logout: "exit" };
 const SECRET_VERBS = ["cal", "echo", "cowsay", "ping", "git", "cd", "vi", "vim", "nvim", "man", "ssh", "apt", "apt-get", "brew", "pip", "npm", "rm"];
@@ -757,9 +779,12 @@ const COMMANDS = {
   fortune: () => { const f = FORTUNES[Math.random() * FORTUNES.length | 0]; out(`<span class="hl">${esc(f[lang === "es" ? 0 : 1])}</span>`); },
   sl,
   "docker ps": () => {
-    out(`<span class="muted">${"IMAGE".padEnd(38)}STATUS</span>`);
-    PROJECTS.filter(([n]) => n !== "borgmatic-script").forEach(([n], i) =>
-      out(`${esc(("dgongut/" + n).padEnd(38))}<span class="hl">Up ${[3, 2, 5, 7, 4, 2, 6][i % 7]} ${tr("semanas", "weeks")} (healthy)</span>`));
+    const rows = Object.entries(ACTIVE).sort((a, b) => b[1] - a[1]);
+    if (!rows.length) return muted(T[lang].noTelemetry);
+    out(`<span class="muted">${"IMAGE".padEnd(37)}${esc(T[lang].psHead)}</span>`);
+    rows.forEach(([n, a]) => out(`${link("dgongut/" + n, STATS_URL + n)}${" ".repeat(Math.max(1, 37 - 8 - n.length))}<span class="hl">${fmtActive(a)}</span>`));
+    out(`<span class="muted">${"TOTAL".padEnd(37)}</span><span class="cmd">${totalActive()}</span>`);
+    out(`<span class="muted">${esc(T[lang].psNote)}</span> ${link("stats.dgongut.com", STATS_URL)}`);
   },
   htop: () => {
     out(`<span class="muted">  PID USER      CPU%  MEM%  COMMAND</span>`);
@@ -807,6 +832,7 @@ function catProject(name) {
   const [, url, fb] = p, tag = projectTag(n, url, fb);
   out(`<span class="hl">${esc(n)}</span>${tag ? ` <span class="muted">${tag.replace(/<b>/g, '<b class="star">')}</span>` : ""}`);
   a[lang].forEach(l => out(esc(l)));
+  if (ACTIVE[n]) out(`<span class="hl">●</span> ${esc(T[lang].catActive(fmtActive(ACTIVE[n])))} <span class="muted">·</span> ${link("stats", STATS_URL + n)}`);
   if (a.install === "compose") out(`<span class="muted">${esc(T[lang].compose)}</span>`);
   out(`<span class="muted">$</span> <span class="cmd">${esc(a.install === "compose" ? "docker compose up -d" : a.install)}</span>`);
   out(`↗ ${link(url.replace("https://", ""), url)}`);

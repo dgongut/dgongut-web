@@ -1,7 +1,7 @@
 """Servidor local de pruebas. Uso, desde la raíz del repo:  python3 dev/devserver.py
 
 Sirve www/ en http://127.0.0.1:8765 e imita lo que hace nginx en trappist:
-  - /api/dockerhub.json y /api/donors.json (proxies)
+  - /api/dockerhub.json, /api/donors.json y /api/telemetry.json (proxies)
   - rutas inexistentes -> index.html con código 404
 No envía las cabeceras de seguridad (CSP, etc.): pruébalas en el servidor real.
 """
@@ -14,6 +14,7 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "www")
 PROXY = {
     "/api/dockerhub.json": "https://hub.docker.com/v2/repositories/dgongut/?page_size=100",
     "/api/donors.json": "https://www.dgongut.com/api/donors.json",
+    "/api/telemetry.json": "https://telemetry.dgongut.com/v1/projects",
 }
 
 
