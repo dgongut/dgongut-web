@@ -1,4 +1,9 @@
 "use strict";
+// iOS amplía la página al enfocar un campo con letra < 16px. Con maximum-scale=1 no lo hace,
+// y en iOS se puede seguir haciendo zoom con dos dedos. Solo en iOS: Android sí bloquearía ese zoom.
+if (CSS.supports("-webkit-touch-callout", "none")) {
+  document.querySelector('meta[name="viewport"]').content = "width=device-width, initial-scale=1.0, maximum-scale=1";
+}
 // ---------- ASCII banner (ANSI Shadow) ----------
 const L = {
   D: ["██████╗ ","██╔══██╗","██║  ██║","██║  ██║","██████╔╝","╚═════╝ "],
@@ -16,11 +21,14 @@ document.getElementById('banner').textContent =
 const ICONS = {
   github: "M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12",
   docker: "M13.983 11.078h2.119a.186.186 0 00.186-.185V9.006a.186.186 0 00-.186-.186h-2.119a.185.185 0 00-.185.185v1.888c0 .102.083.185.185.185m-2.954-5.43h2.118a.186.186 0 00.186-.186V3.574a.186.186 0 00-.186-.185h-2.118a.185.185 0 00-.185.185v1.888c0 .102.082.185.185.185m0 2.716h2.118a.187.187 0 00.186-.186V6.29a.186.186 0 00-.186-.185h-2.118a.185.185 0 00-.185.185v1.887c0 .102.082.185.185.186m-2.93 0h2.12a.186.186 0 00.184-.186V6.29a.185.185 0 00-.185-.185H8.1a.185.185 0 00-.185.185v1.887c0 .102.083.185.185.186m-2.964 0h2.119a.186.186 0 00.185-.186V6.29a.185.185 0 00-.185-.185H5.136a.186.186 0 00-.186.185v1.887c0 .102.084.185.186.186m5.893 2.715h2.118a.186.186 0 00.186-.185V9.006a.186.186 0 00-.186-.186h-2.118a.185.185 0 00-.185.185v1.888c0 .102.082.185.185.185m-2.93 0h2.12a.185.185 0 00.184-.185V9.006a.185.185 0 00-.184-.186h-2.12a.185.185 0 00-.184.185v1.888c0 .102.083.185.185.185m-2.964 0h2.119a.185.185 0 00.185-.185V9.006a.185.185 0 00-.184-.186h-2.12a.186.186 0 00-.186.186v1.887c0 .102.084.185.186.185m-2.92 0h2.12a.185.185 0 00.184-.185V9.006a.185.185 0 00-.184-.186h-2.12a.185.185 0 00-.184.185v1.888c0 .102.082.185.185.185M23.763 9.89c-.065-.051-.672-.51-1.954-.51-.338.001-.676.03-1.01.087-.248-1.7-1.653-2.53-1.716-2.566l-.344-.199-.226.327c-.284.438-.49.922-.612 1.43-.23.97-.09 1.882.403 2.661-.595.332-1.55.413-1.744.42H.751a.751.751 0 00-.75.748 11.376 11.376 0 00.692 4.062c.545 1.428 1.355 2.48 2.41 3.124 1.18.723 3.1 1.137 5.275 1.137.983.003 1.963-.086 2.93-.266a12.248 12.248 0 003.823-1.389c.98-.567 1.86-1.288 2.61-2.136 1.252-1.418 1.998-2.997 2.553-4.4h.221c1.372 0 2.215-.549 2.68-1.009.309-.293.55-.65.707-1.046l.098-.288Z",
+  linkedin: "M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z",
   telegram: "M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z",
 };
+const LINKEDIN_URL = "https://www.linkedin.com/in/dgongut/";
 const SOCIAL = [
   ["GitHub", "https://github.com/dgongut", "github"],
   ["Docker Hub", "https://hub.docker.com/u/dgongut", "docker"],
+  ["LinkedIn", LINKEDIN_URL, "linkedin"],
   ["Telegram", "https://t.me/dgongut", "telegram"],
 ];
 const DONATE_URL = "https://www.paypal.com/paypalme/dgonzalezgutierrez";
@@ -110,11 +118,13 @@ const T = {
       "Audiovisual · cofundador de 4Frame · +7 cortometrajes",
     ],
     hint: "Toca o escribe:",
+    skip: "acelerar ⏩",
     other: "English",
     help: [
       ["whoami", "quién soy"],
       ["ls /Projects", "proyectos"],
       ["ls /Social", "redes"],
+      ["cv", "trayectoria profesional"],
       ["cat skills.txt", "habilidades"],
       ["neofetch", "mi homelab"],
       ["cat <proyecto>", "detalles de un proyecto"],
@@ -130,6 +140,7 @@ const T = {
     ],
     helpTip: "↑/↓ historial · Tab autocompleta · …y hay algún secreto 👀",
     contact: ["¿Trabajo, colaboraciones o una idea? Escríbeme:"],
+    cv: "Mi trayectoria profesional completa está en LinkedIn:",
     contactBots: "Si es un fallo de algún bot, mejor abre un issue en su GitHub 🙏",
     notFound: p => `bash: cd: ${p}: No existe el archivo o el directorio`,
     donate: ["Si alguno de mis bots te ahorra tiempo, puedes invitarme a un café ☕", "Gracias de verdad, ayuda a mantener los proyectos vivos."],
@@ -164,11 +175,13 @@ const T = {
       "Video · 4Frame co-founder · 7+ short films",
     ],
     hint: "Tap or type:",
+    skip: "speed up ⏩",
     other: "Español",
     help: [
       ["whoami", "who I am"],
       ["ls /Projects", "projects"],
       ["ls /Social", "links"],
+      ["cv", "work experience"],
       ["cat skills.txt", "skills"],
       ["neofetch", "my homelab"],
       ["cat <project>", "project details"],
@@ -184,6 +197,7 @@ const T = {
     ],
     helpTip: "↑/↓ history · Tab completes · …and there may be a secret or two 👀",
     contact: ["Work, collaborations or an idea? Drop me a line:"],
+    cv: "My full work experience is on LinkedIn:",
     contactBots: "If it's a bug in one of the bots, please open an issue on its GitHub 🙏",
     notFound: p => `bash: cd: ${p}: No such file or directory`,
     donate: ["If any of my bots saves you time, you can buy me a coffee ☕", "Thank you, it really helps keep the projects alive."],
@@ -219,7 +233,21 @@ const inputLine = document.getElementById("input-line");
 const inputTs = document.getElementById("input-ts");
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const canHover = matchMedia("(hover: hover)").matches;
-const sleep = ms => new Promise(r => setTimeout(r, reduce ? 0 : ms));
+// Acelerar la intro: con `fast` las esperas pendientes terminan ya y las siguientes duran mucho menos
+let fast = false;
+const FAST = .12;
+const wakers = new Set();
+const sleep = ms => reduce ? Promise.resolve() : new Promise(r => {
+  if (fast) ms *= FAST;
+  const w = () => { clearTimeout(t); wakers.delete(w); r(); };
+  const t = setTimeout(w, ms);
+  wakers.add(w);
+});
+function speedUp() {
+  if (booted || fast) return;
+  fast = true;
+  [...wakers].forEach(w => w());
+}
 const now = () => new Date().toLocaleTimeString("es-ES", { hour12: false });
 const esc = s => s.replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
 const scroll = () => window.scrollTo(0, document.body.scrollHeight);
@@ -243,7 +271,8 @@ async function type(text, speed = 35) {
   const cur = document.createElement("span"); cur.className = "cursor";
   el.after(cur);
   try {
-    for (const ch of text) { el.textContent += ch; if (ch !== " ") Sound.click(); await sleep(speed + Math.random() * 30); check(g); }
+    for (const ch of text) {
+      el.textContent += ch; if (ch !== " " && !fast) Sound.click(); await sleep(speed + Math.random() * 30); check(g); }
   } finally { cur.remove(); }
 }
 function out(html, cls = "out") {
@@ -275,8 +304,10 @@ const ghReady = (async () => {
     const r = await fetch("https://api.github.com/users/dgongut/repos?per_page=100");
     if (r.ok) (await r.json()).forEach(x => { d[x.name] = { stars: x.stargazers_count, pushed: x.pushed_at }; });
     await Promise.all(PROJECTS.map(([, u]) => ghRepo(u)).filter(n => n && d[n]).map(async n => {
-      const r = await fetch(`https://api.github.com/repos/dgongut/${n}/releases/latest`);
-      if (r.ok) { const j = await r.json(); d[n].ver = j.tag_name; d[n].date = j.published_at; d[n].rel = j.html_url; }
+      // la lista (y no /releases/latest): sin releases devuelve [] en vez de un 404 en la consola
+      const r = await fetch(`https://api.github.com/repos/dgongut/${n}/releases?per_page=5`);
+      const j = r.ok ? (await r.json()).find(x => !x.draft && !x.prerelease) : null;
+      if (j) { d[n].ver = j.tag_name; d[n].date = j.published_at; d[n].rel = j.html_url; }
     }));
     if (Object.keys(d).length) try { sessionStorage.setItem("gh-v2", JSON.stringify({ t: Date.now(), d })); } catch {}
   } catch {}
@@ -334,7 +365,7 @@ const Stats = (() => {
 })();
 // Los comandos de help con nombre propio en el panel; los ocultos se agrupan para no destaparlos
 const STATS_CMDS = { whoami: "whoami", "ls /projects": "ls_projects", "ls /social": "ls_social", "cat skills.txt": "cat_skills",
-  neofetch: "neofetch", "git log": "git_log", "docker images": "docker_images", contact: "contact", donate: "donate",
+  neofetch: "neofetch", "git log": "git_log", "docker images": "docker_images", contact: "contact", cv: "cv", donate: "donate",
   donors: "donors", help: "help", clear: "clear", "lang es": "lang_es", "lang en": "lang_en", ls: "ls", pwd: "pwd", date: "date",
   matrix: "matrix", exit: "exit", logout: "exit" };
 const SECRET_VERBS = ["cal", "echo", "cowsay", "ping", "git", "cd", "vi", "vim", "nvim", "man", "ssh", "apt", "apt-get", "brew", "pip", "npm", "rm"];
@@ -672,7 +703,12 @@ const COMMANDS = {
     const m = MAIL();
     out(`✉ <a href="mailto:${m}">${m}</a>`);
     out(`<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS.telegram}"/></svg>${link("t.me/dgongut", "https://t.me/dgongut")}`, "item");
+    out(`<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS.linkedin}"/></svg>${link("linkedin.com/in/dgongut", LINKEDIN_URL)}`, "item");
     out(`<span class="muted">${esc(T[lang].contactBots)}</span>`);
+  },
+  cv: () => {
+    out(esc(T[lang].cv));
+    out(`<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS.linkedin}"/></svg>${link("linkedin.com/in/dgongut", LINKEDIN_URL)}`, "item");
   },
   neofetch: () => SETUP.forEach(([h, d]) =>
     out(`<span class="hl">${h.padEnd(10)}</span> <span class="muted">${esc(d)}</span>`)),
@@ -753,7 +789,7 @@ const COMMANDS = {
   "make me a sandwich": () => muted(tr("¿Qué? Háztelo tú.", "What? Make it yourself.")),
   "sudo make me a sandwich": () => muted(tr("Vale.", "Okay.")),
 };
-const ALIASES = { "cat donors.txt": "donors", "ls /donors": "donors", thanks: "donors", gracias: "donors", "ls /projects/": "ls /projects", "ls /social/": "ls /social", projects: "ls /projects", social: "ls /social", skills: "cat skills.txt",
+const ALIASES = { resume: "cv", curriculum: "cv", "currículum": "cv", linkedin: "cv", "cat cv.txt": "cv", "cat cv.pdf": "cv", "cat donors.txt": "donors", "ls /donors": "donors", thanks: "donors", gracias: "donors", "ls /projects/": "ls /projects", "ls /social/": "ls /social", projects: "ls /projects", social: "ls /social", skills: "cat skills.txt",
   uname: "uname -a", top: "htop", "ls -a": "ls -la", "ls -al": "ls -la", ll: "ls -la", "cat .secrets": "cat .secretos",
   ":q!": ":q", ":wq": ":q", ":x": ":q", ":qa!": ":q", "café": "coffee", cafe: "coffee", "make coffee": "coffee", "brew coffee": "coffee",
   hello: "hola", hi: "hola", hey: "hola", "buenas": "hola", shutdown: "exit", poweroff: "exit", "sudo reboot": "reboot", "sudo shutdown": "exit" };
@@ -778,7 +814,10 @@ function setLang(l) {
   const hint = document.getElementById("hint");
   hint.innerHTML = `<span>${esc(T[l].hint)}</span><span class="chips">${CHIPS.map(c =>
     `<button type="button" class="chip" data-cmd="${esc(c)}">${esc(c)}</button>`).join("")}</span><span>·</span>` +
-    `<button type="button" class="swap">${T[l].other}</button><span>·</span><button type="button" class="snd" aria-label="sound"></button>`;
+    `<button type="button" class="swap">${T[l].other}</button><span>·</span><button type="button" class="snd" aria-label="sound"></button>` +
+    `<button type="button" class="skip">${esc(T[l].skip)}</button>`;
+  hint.querySelector(".skip").onclick = speedUp;
+  input.setAttribute("aria-label", l === "es" ? "comando" : "command");
   hint.querySelector(".swap").onclick = () => {
     const other = l === "es" ? "en" : "es";
     if (booted) run(`lang ${other}`, true);
@@ -885,7 +924,14 @@ document.addEventListener("click", e => {
     run(b.dataset.cmd, true).then(focusInput);
     return;
   }
-  if (!e.target.closest("a, button") && !getSelection().toString()) focusInput();
+  if (e.target.closest("a, button")) return;
+  if (!booted) return speedUp();
+  if (!getSelection().toString()) focusInput();
+});
+// Durante la intro, cualquier tecla la acelera (salvo atajos del navegador y teclas sueltas como Shift)
+addEventListener("keydown", e => {
+  if (booted || e.metaKey || e.ctrlKey || e.altKey || ["Shift", "Control", "Alt", "Meta", "Tab", "CapsLock"].includes(e.key)) return;
+  speedUp();
 });
 
 // ---------- Arranque ----------
@@ -896,6 +942,7 @@ const MISSING_PATH = !["/", "/index.html"].includes(location.pathname)
 async function boot() {
   const g = ++gen;
   booted = false;
+  fast = false;
   term.innerHTML = "";
   setLang(lang);
   if (MISSING_PATH) out(`<span class="warn">${esc(T[lang].notFound(MISSING_PATH))}</span>`, "line");
@@ -910,6 +957,7 @@ async function boot() {
     throw e;
   }
   booted = true;
+  fast = false;
   loadLive();
   document.body.classList.add("booted");
   inputTs.textContent = now();

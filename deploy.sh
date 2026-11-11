@@ -16,8 +16,16 @@ if [[ -z "$DRY" ]]; then
   ssh "$HOST" "cd ~/$DIR && mkdir -p backups && tar czf backups/www-and-nginx-\$(date +%Y%m%d-%H%M%S).tar.gz config/www config/nginx/site-confs/default.conf config/nginx/security-headers.conf"
 fi
 
-echo "» Subiendo www/"
-rsync -rlcv --delete $DRY --exclude '.DS_Store' www/ "$HOST:$DIR/config/www/"
+# lastmod del sitemap: fecha del último commit que tocó www/ (o hoy, si hay cambios sin commit en www/)
+LASTMOD="$(git log -1 --format=%cs -- www 2>/dev/null || true)"
+if [[ -z "$LASTMOD" || -n "$(git status --porcelain -- www 2>/dev/null)" ]]; then LASTMOD="$(date +%F)"; fi
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
+sed "s#<lastmod>[^<]*</lastmod>#<lastmod>$LASTMOD</lastmod>#" www/sitemap.xml > "$TMP/sitemap.xml"
+
+echo "» Subiendo www/ (sitemap con lastmod $LASTMOD)"
+rsync -rlcv --delete $DRY --exclude '.DS_Store' --exclude '/sitemap.xml' www/ "$HOST:$DIR/config/www/"
+rsync -cv --chmod=F644 $DRY "$TMP/sitemap.xml" "$HOST:$DIR/config/www/sitemap.xml"
 
 echo "» Subiendo config de nginx"
 rsync -cv $DRY nginx/security-headers.conf "$HOST:$DIR/config/nginx/security-headers.conf.new"
