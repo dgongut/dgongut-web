@@ -98,7 +98,7 @@ const SETUP = [
   ["saturno", "Synology DS923+ · 20GB RAM · ~26TB"],
   ["ganimedes", "UnRAID · Intel N100 · 8GB RAM"],
   ["trappist", "VPS · Debian 13 · 3GB RAM"],
-  ["macbook", "MacBook Pro M4 · 16GB · 512GB"],
+  ["macbook", "MacBook Pro M4 · 16GB RAM · 512GB"],
 ];
 
 // Años de experiencia: se calculan solos desde que empecé (2019)
