@@ -48,14 +48,15 @@ const PROJECTS = [
   ["whitelist-telegram-bot", "https://github.com/dgongut/whitelist-telegram-bot"],
   ["borgmatic-script", "https://github.com/dgongut/borgmatic-script"],
 ];
-// Lo que muestra `cat <proyecto>`. install: comando para empezar a usarlo.
+// Lo que muestra `cat <proyecto>`. install: comando para empezar a usarlo, o "compose" para los bots
+// que se despliegan con el docker-compose de ejemplo del README (texto común en T.compose).
 const ABOUT = {
   "docker-controller-bot": {
     es: ["Bot de Telegram para controlar los contenedores Docker de tu servidor desde el móvil:",
          "arrancar, parar, ver logs, actualizar imágenes y recibir avisos de cambios."],
     en: ["Telegram bot to control the Docker containers on your server from your phone:",
          "start, stop, read logs, update images and get notified about changes."],
-    install: "docker pull dgongut/docker-controller-bot",
+    install: "compose",
   },
   "malaga-cam-bot": {
     es: ["Bot de Telegram con las cámaras de tráfico y ciudad de Málaga en tiempo real."],
@@ -65,27 +66,27 @@ const ABOUT = {
   "torrent-controller-bot": {
     es: ["Controla tu cliente de torrents desde Telegram: añade, pausa y sigue tus descargas."],
     en: ["Control your torrent client from Telegram: add, pause and track your downloads."],
-    install: "docker pull dgongut/torrent-controller-bot",
+    install: "compose",
   },
   "dropbot": {
     es: ["Reenvía archivos a un bot de Telegram y se descargan directamente en tu servidor."],
     en: ["Forward files to a Telegram bot and they are downloaded straight to your server."],
-    install: "docker pull dgongut/dropbot",
+    install: "compose",
   },
   "wakebot": {
     es: ["Despierta los dispositivos de tu red local con Wake-on-LAN desde Telegram."],
     en: ["Wake up the devices on your local network with Wake-on-LAN from Telegram."],
-    install: "docker pull dgongut/wakebot",
+    install: "compose",
   },
   "intrubot": {
     es: ["Vigila quién se conecta a tu red y te avisa por Telegram de dispositivos nuevos."],
     en: ["Watches who joins your network and alerts you on Telegram about new devices."],
-    install: "docker pull dgongut/intrubot",
+    install: "compose",
   },
   "whitelist-telegram-bot": {
     es: ["Expulsa automáticamente de un grupo de Telegram a quien no esté en la lista blanca."],
     en: ["Automatically kicks anyone who is not on the whitelist out of a Telegram group."],
-    install: "docker pull dgongut/whitelist-telegram-bot",
+    install: "compose",
   },
   "borgmatic-script": {
     es: ["Scripts sencillos para automatizar copias de seguridad con Borgmatic."],
@@ -150,6 +151,7 @@ const T = {
     donorsTail: "¿Quieres aparecer aquí? Escribe 'donate'.",
     donorsHint: n => `Ya me han apoyado ${n} personas, escribe`,
     noDonors: "No he podido cargar la lista ahora mismo.",
+    compose: "Se despliega con Docker Compose: copia el ejemplo del README, rellena sus variables (token de Telegram, tu chat ID…) y arráncalo:",
     noFile: f => `cat: ${f}: No existe el archivo. Prueba con un nombre de 'ls /Projects'.`,
     projTip: "toca un proyecto para ver qué hace",
     themeOk: t => `tema: ${t}`,
@@ -207,6 +209,7 @@ const T = {
     donorsTail: "Want to be here? Type 'donate'.",
     donorsHint: n => `${n} people have already supported me, type`,
     noDonors: "Couldn't load the list right now.",
+    compose: "Deploy it with Docker Compose: copy the example from the README, fill in its variables (Telegram token, your chat ID…) and start it:",
     noFile: f => `cat: ${f}: No such file. Try a name from 'ls /Projects'.`,
     projTip: "tap a project to see what it does",
     themeOk: t => `theme: ${t}`,
@@ -804,7 +807,8 @@ function catProject(name) {
   const [, url, fb] = p, tag = projectTag(n, url, fb);
   out(`<span class="hl">${esc(n)}</span>${tag ? ` <span class="muted">${tag.replace(/<b>/g, '<b class="star">')}</span>` : ""}`);
   a[lang].forEach(l => out(esc(l)));
-  out(`<span class="muted">$</span> <span class="cmd">${esc(a.install)}</span>`);
+  if (a.install === "compose") out(`<span class="muted">${esc(T[lang].compose)}</span>`);
+  out(`<span class="muted">$</span> <span class="cmd">${esc(a.install === "compose" ? "docker compose up -d" : a.install)}</span>`);
   out(`↗ ${link(url.replace("https://", ""), url)}`);
 }
 
